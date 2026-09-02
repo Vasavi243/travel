@@ -1,5 +1,11 @@
 # WanderAI — AI-Powered Travel Explorer
 
+## 🚀 Live Demo
+
+🌐 **WanderAI is live here:**
+
+👉 https://travel-one-silk.vercel.app/
+
 > **Explore the world. Plan intelligently.**
 
 WanderAI is a modern, visually immersive, production-ready AI travel explorer and itinerary architect built with React, Vite, Tailwind CSS, Lucide icons, Framer Motion, and Google Gemini.
