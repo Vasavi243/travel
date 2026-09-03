@@ -1,7 +1,11 @@
 /**
  * Vercel Serverless Function for Google Gemini API
  * Securely proxies client requests using server-side GEMINI_API_KEY environment variable.
+ * Optimized for sub-2-second response latency using a single high-performance Flash model.
  */
+
+const PRIMARY_MODEL = "gemini-flash-lite-latest";
+const REQUEST_TIMEOUT_MS = 9000;
 
 export default async function handler(req, res) {
   // Allow CORS for local development
@@ -25,17 +29,21 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
   if (!apiKey || apiKey === "your_key_here") {
     return res.status(500).json({
       error: "GEMINI_API_KEY is not configured on the server."
     });
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   try {
     const { prompt, systemInstruction } = req.body || {};
 
     if (!prompt) {
+      clearTimeout(timeoutId);
       return res.status(400).json({ error: "Prompt is required." });
     }
 
@@ -53,14 +61,17 @@ export default async function handler(req, res) {
       };
     }
 
-    // Call Google Gemini API (gemini-2.5-flash or gemini-1.5-flash)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // Call ONE reliable primary Gemini Flash model directly
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${PRIMARY_MODEL}:generateContent?key=${apiKey}`;
 
     const geminiResponse = await fetch(geminiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
@@ -76,9 +87,13 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ text: candidateText });
   } catch (error) {
-    console.error("Gemini serverless function error:", error);
-    return res.status(500).json({
-      error: "Internal server error occurred while contacting Gemini API."
+    clearTimeout(timeoutId);
+    console.error("Gemini serverless function error:", error.name || error.message);
+    const isTimeout = error.name === "AbortError";
+    return res.status(isTimeout ? 504 : 500).json({
+      error: isTimeout
+        ? "Gemini request timed out."
+        : "Internal server error occurred while contacting Gemini API."
     });
   }
 }

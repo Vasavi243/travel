@@ -322,6 +322,7 @@ export function DestinationDetails() {
         {/* Famous Places Section */}
         <FamousPlaces
           places={destination.famousPlaces}
+          destination={destination}
           destinationName={destination.name}
         />
 

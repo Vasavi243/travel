@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles, RefreshCw, MessageSquare } from "lucide-react";
+import { Send, Bot, User, Sparkles, RefreshCw, MessageSquare, Loader2 } from "lucide-react";
 import { askWanderAIChatbot } from "../services/geminiService";
 
 const SUGGESTED_QUESTIONS = [
@@ -18,13 +18,14 @@ export function AIChatbot({ destination }) {
     {
       id: "welcome",
       role: "assistant",
-      text: `Hello! I'm your WanderAI concierge for **${destination.name}, ${destination.country}**. Ask me about itinerary ideas, local dishes, hidden photography spots, packing, or navigating the city!`,
+      text: `Hello! I'm your WanderAI concierge for **${destination.name}, ${destination.country}**. Ask me about itinerary ideas, local food, hidden photography spots, budget, packing, or navigating the city!`,
       timestamp: new Date()
     }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,8 +35,16 @@ export function AIChatbot({ destination }) {
     scrollToBottom();
   }, [messages, loading]);
 
+  // Adjust textarea height dynamically based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  }, [input]);
+
   const handleSend = async (questionToSend) => {
-    const text = (questionToSend || input).trim();
+    const text = (questionToSend !== undefined ? questionToSend : input).trim();
     if (!text || loading) return;
 
     const uId = `u-${msgIdCounter.current++}`;
@@ -48,6 +57,9 @@ export function AIChatbot({ destination }) {
 
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
     setLoading(true);
 
     try {
@@ -62,22 +74,21 @@ export function AIChatbot({ destination }) {
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
       console.warn("Chatbot response error:", err);
-      const fId = `f-${msgIdCounter.current++}`;
-      const fallbackMsg = {
-        id: fId,
+      const eId = `err-${msgIdCounter.current++}`;
+      const errorMsg = {
+        id: eId,
         role: "assistant",
-        text: `Visiting **${destination.name}** is incredible. For ${destination.name}, top highlights include ${destination.famousPlaces?.map(p => p.name).slice(0, 3).join(", ")}. Be sure to pack comfortable shoes and plan around ${destination.bestTime}!`,
+        text: `Unable to reach the AI assistant. Please try again.\n\nTip: For **${destination.name}**, top highlights include ${destination.famousPlaces?.map((p) => p.name).slice(0, 3).join(", ")}. Be sure to visit during ${destination.bestTime}!`,
         timestamp: new Date()
       };
-      setMessages((prev) => [...prev, fallbackMsg]);
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setLoading(false);
     }
   };
 
-
-
   const handleKeyDown = (e) => {
+    // Enter sends message; Shift + Enter creates a new line
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -85,7 +96,7 @@ export function AIChatbot({ destination }) {
   };
 
   return (
-    <div className="glass-panel rounded-3xl overflow-hidden border border-slate-700/60 shadow-2xl flex flex-col h-[560px]">
+    <div className="glass-panel rounded-3xl overflow-hidden border border-slate-700/60 shadow-2xl flex flex-col h-[580px]">
       {/* Chatbot Header */}
       <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/80 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -114,7 +125,6 @@ export function AIChatbot({ destination }) {
               }
             ]);
           }}
-
           className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors text-xs flex items-center gap-1 cursor-pointer"
           title="Clear chat"
         >
@@ -155,7 +165,7 @@ export function AIChatbot({ destination }) {
               >
                 <div className="whitespace-pre-line">{msg.text}</div>
                 <div
-                  className={`text-[9px] mt-1 text-right ${
+                  className={`text-[9px] mt-1.5 text-right ${
                     isUser ? "text-cyan-200/80" : "text-slate-400"
                   }`}
                 >
@@ -188,7 +198,7 @@ export function AIChatbot({ destination }) {
       </div>
 
       {/* Suggested Quick Question Chips */}
-      <div className="px-4 py-2 border-t border-slate-800/80 bg-slate-950/40 flex items-center gap-2 overflow-x-auto scrollbar-none">
+      <div className="px-4 py-2.5 border-t border-slate-800/80 bg-slate-950/40 flex items-center gap-2 overflow-x-auto scrollbar-none">
         <span className="text-[10px] text-slate-400 uppercase font-semibold whitespace-nowrap flex items-center gap-1">
           <MessageSquare className="w-3 h-3 text-cyan-400" />
           Suggested:
@@ -196,6 +206,7 @@ export function AIChatbot({ destination }) {
         {SUGGESTED_QUESTIONS.map((q) => (
           <button
             key={q}
+            type="button"
             onClick={() => handleSend(q)}
             disabled={loading}
             className="px-3 py-1 rounded-full bg-slate-900 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border border-slate-800 hover:border-cyan-500/30 text-[11px] whitespace-nowrap transition-colors cursor-pointer disabled:opacity-50"
@@ -205,26 +216,34 @@ export function AIChatbot({ destination }) {
         ))}
       </div>
 
-      {/* Input Bar */}
+      {/* Input Bar (Supports Multi-line via Shift+Enter and Send via Enter) */}
       <div className="p-4 border-t border-slate-800 bg-slate-900/90">
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            placeholder={`Ask anything about ${destination.name}...`}
-            className="flex-1 px-4 py-3 rounded-2xl bg-slate-950/80 border border-slate-700/80 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 transition-all"
+            placeholder={`Ask anything about ${destination.name}... (Enter to send, Shift+Enter for newline)`}
+            className="flex-1 px-4 py-3 rounded-2xl bg-slate-950/80 border border-slate-700/80 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 transition-all resize-none max-h-28 overflow-y-auto"
           />
           <button
+            type="button"
             onClick={() => handleSend()}
             disabled={!input.trim() || loading}
-            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-semibold shadow-md shadow-cyan-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center gap-1.5 cursor-pointer"
+            className="h-[46px] px-5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-semibold shadow-md shadow-cyan-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center gap-1.5 cursor-pointer flex-shrink-0"
             aria-label="Send message"
           >
-            <span>Send</span>
-            <Send className="w-3.5 h-3.5" />
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <span>Send</span>
+                <Send className="w-3.5 h-3.5" />
+              </>
+            )}
           </button>
         </div>
       </div>

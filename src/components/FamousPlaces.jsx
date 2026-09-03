@@ -1,9 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { Landmark, Compass } from "lucide-react";
 import { PlaceCard } from "./PlaceCard";
+import { PlaceDetailsModal } from "./PlaceDetailsModal";
 
-export function FamousPlaces({ places = [], destinationName = "" }) {
+export function FamousPlaces({ places = [], destination, destinationName = "" }) {
+  const [selectedPlace, setSelectedPlace] = useState(null);
+
   if (!places || places.length === 0) return null;
+
+  const destObj = destination || { name: destinationName };
+  const displayName = destination?.name || destinationName;
 
   return (
     <section className="my-16">
@@ -14,10 +20,10 @@ export function FamousPlaces({ places = [], destinationName = "" }) {
             <span>Curated Landmarks</span>
           </div>
           <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Famous Places in {destinationName}
+            Famous Places in {displayName}
           </h3>
           <p className="text-sm text-slate-400 mt-1 max-w-xl">
-            Iconic sights, cultural wonders, and unmissable spots curated for an unforgettable visit.
+            Click any iconic sight or cultural wonder below to view detailed travel guidance, visiting tips, and Google Maps.
           </p>
         </div>
 
@@ -27,16 +33,26 @@ export function FamousPlaces({ places = [], destinationName = "" }) {
         </div>
       </div>
 
-      {/* Responsive Grid */}
+      {/* Responsive Grid of Famous Place Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {places.map((place) => (
           <PlaceCard
             key={place.id || place.name}
             place={place}
-            destinationName={destinationName}
+            destinationName={displayName}
+            onClick={() => setSelectedPlace(place)}
           />
         ))}
       </div>
+
+      {/* Interactive Place Details Modal with Google Maps */}
+      <PlaceDetailsModal
+        key={selectedPlace ? selectedPlace.id || selectedPlace.name : "none"}
+        place={selectedPlace}
+        destination={destObj}
+        isOpen={Boolean(selectedPlace)}
+        onClose={() => setSelectedPlace(null)}
+      />
     </section>
   );
 }
