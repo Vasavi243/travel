@@ -1,5 +1,11 @@
 # WanderAI — AI-Powered Travel Explorer
 
+## 🚀 Live Demo
+
+🌐 **WanderAI is live here:**
+
+👉 https://travel-one-silk.vercel.app/
+
 > **Explore the world. Plan intelligently.**
 
 WanderAI is a modern, visually immersive, production-ready AI travel explorer and itinerary architect built with React, Vite, Tailwind CSS, Lucide icons, Framer Motion, and Google Gemini.
@@ -14,7 +20,7 @@ WanderAI is a modern, visually immersive, production-ready AI travel explorer an
 - Responsive live feature telemetry cards highlighting curated cities, live weather, Gemini AI assistant, and the interactive planner.
 
 ### 2. 🌍 Destination Explorer & Search/Filter
-- Curated catalog of global destinations: **Paris, Tokyo, Dubai, Bali, New York, Rome, Singapore, and Goa**.
+- Curated catalog of global destinations: **Paris, Tokyo, Dubai, Bali, New York, Rome, Singapore, Goa, London, Barcelona, Amsterdam, Istanbul, Venice, Florence, Prague, Vienna,      Santorini, Athens, Lisbon, Madrid, Zurich, Interlaken, Bangkok, Phuket, Maldives, Mumbai, Delhi, Jaipur, Kerala, Seoul, Hong Kong, Kuala Lumpur, Kyoto, Hanoi, Abu Dhabi, Los       Angeles, Las Vegas, San Francisco, Miami, Chicago, Toronto, Vancouver, Cancun, Rio de Janeiro, Buenos Aires, Lima, Machu Picchu, Sydney, Melbourne, Auckland, Queenstown, Cape      Town, Cairo, Marrakech, Zanzibar, Nairobi, Doha, Muscat, and Petra**.
 - Real-time keyword search by destination name, country, or keyword.
 - Instant category tabs (**All, City, Beach, History, Luxury, Culture**) with active visual styling and empty state feedback.
 
